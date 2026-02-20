@@ -1,12 +1,17 @@
-import java.time.LocalDate;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 
 public class Inventory {
 
+    private LinkedList<StockItem> stocks;
+
+    public Inventory() {
+        stocks = new LinkedList<>();
+    }
+
+    // ENUM for single search/delete criterion
     public enum CriteriaType {
         ENGINE_NUMBER,
         BRAND,
@@ -15,102 +20,74 @@ public class Inventory {
         DATE_ENTERED
     }
 
-    private final LinkedList<StockItem> inventoryList;
-
-    public Inventory() {
-        this.inventoryList = new LinkedList<>();
-    }
-
-    public int size() {
-        return inventoryList.size();
-    }
-
+    // ADD STOCK
     public void addStock(StockItem item) {
-        inventoryList.addLast(item);
+        stocks.add(item);
     }
 
+    // SIZE
+    public int size() {
+        return stocks.size();
+    }
+
+    // GET ALL
+    public List<StockItem> getAll() {
+        return new LinkedList<>(stocks);
+    }
+
+    // SEARCH (Single Criterion)
     public List<StockItem> search(CriteriaType type, String value) {
-        LinkedList<StockItem> results = new LinkedList<>();
 
-        for (StockItem item : inventoryList) {
-            if (matches(item, type, value)) {
-                results.add(item);
-            }
-        }
-
-        return results;
+        return stocks.stream()
+                .filter(item -> matches(item, type, value))
+                .collect(Collectors.toList());
     }
 
+    // DELETE FIRST MATCH
     public boolean deleteFirstMatch(CriteriaType type, String value) {
-        Iterator<StockItem> it = inventoryList.iterator();
-
-        while (it.hasNext()) {
-            StockItem item = it.next();
+        for (StockItem item : stocks) {
             if (matches(item, type, value)) {
-                it.remove();
+                stocks.remove(item);
                 return true;
             }
         }
-
         return false;
     }
 
+    // DELETE ALL MATCHES
     public int deleteAllMatches(CriteriaType type, String value) {
-        int count = 0;
-        Iterator<StockItem> it = inventoryList.iterator();
-
-        while (it.hasNext()) {
-            StockItem item = it.next();
-            if (matches(item, type, value)) {
-                it.remove();
-                count++;
-            }
-        }
-
-        return count;
+        int before = stocks.size();
+        stocks.removeIf(item -> matches(item, type, value));
+        return before - stocks.size();
     }
 
+    // SORT BY BRAND (A-Z)
     public void sortByBrandAscending() {
-        Collections.sort(inventoryList,
-                Comparator.comparing((StockItem s) -> safeLower(s.getBrand()))
-                          .thenComparing(s -> safeLower(s.getEngineNumber()))
-        );
+        stocks.sort(Comparator.comparing(StockItem::getBrand, String.CASE_INSENSITIVE_ORDER));
     }
 
-    public List<StockItem> getAll() {
-        return new LinkedList<>(inventoryList);
-    }
-
+    // MATCHING LOGIC
     private boolean matches(StockItem item, CriteriaType type, String value) {
-        String v = value == null ? "" : value.trim();
 
         switch (type) {
             case ENGINE_NUMBER:
-                return safeLower(item.getEngineNumber()).equals(safeLower(v));
+                return item.getEngineNumber().equalsIgnoreCase(value);
 
             case BRAND:
-                return safeLower(item.getBrand()).contains(safeLower(v));
+                return item.getBrand().equalsIgnoreCase(value);
 
             case STATUS:
-                return safeLower(item.getStatus()).equals(safeLower(v));
+                return item.getStatus().equalsIgnoreCase(value);
 
             case STOCK_LABEL:
-                return safeLower(item.getStockLabel()).equals(safeLower(v));
+                return item.getStockLabel().equalsIgnoreCase(value);
 
             case DATE_ENTERED:
-                try {
-                    LocalDate d = LocalDate.parse(v);
-                    return item.getDateEntered().equals(d);
-                } catch (Exception e) {
-                    return false;
-                }
+                return item.getDateEntered().toString().equalsIgnoreCase(value);
 
             default:
                 return false;
         }
     }
-
-    private String safeLower(String s) {
-        return (s == null) ? "" : s.trim().toLowerCase();
-    }
 }
+
