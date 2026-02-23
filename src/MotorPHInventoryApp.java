@@ -7,7 +7,7 @@ import java.util.Scanner;
 
 public class MotorPHInventoryApp {
 
-    private static final String CSV_PATH = "MotorPH_Inventory.csv";
+    private static final String CSV_PATH = "resources/MotorPH_Inventory.csv";
 
     public static void main(String[] args) {
         Inventory inventory = new Inventory();
